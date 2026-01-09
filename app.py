@@ -5,7 +5,6 @@
 import streamlit as st
 import numpy as np
 import joblib
-import os
 import tensorflow as tf
 from sentence_transformers import SentenceTransformer
 
@@ -61,17 +60,15 @@ LABEL_MAP = {
     "Money transfer, virtual currency, or money service": "💸 Money Transfer / Wallet Issues"
 }
 
-MODEL_PATH = "final_model"
-
 # --- Load Model + Encoder ---
-# Neural model predicts complaint type, encoder maps labels back
+# Directly load files from repo root (no folder path)
 @st.cache_resource
 def load_model_and_encoder():
     model = tf.keras.models.load_model(
-        os.path.join(MODEL_PATH, "final_neural_model.keras"),
+        "final_neural_model.keras",   # direct file name
         compile=False
     )
-    encoder = joblib.load(os.path.join(MODEL_PATH, "label_encoder.pkl"))
+    encoder = joblib.load("label_encoder.pkl")  # direct file name
     return model, encoder
 
 # --- Load Embedder ---

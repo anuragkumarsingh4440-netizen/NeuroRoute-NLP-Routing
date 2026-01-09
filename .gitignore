@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# ML / DL artifacts (DO NOT TRACK)
+final_model/*.pkl
+final_model/*.keras
+final_model/*.h5
+final_model/*.bin
+final_model/*.pt
+final_model/*.onnx

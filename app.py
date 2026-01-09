@@ -6,120 +6,113 @@ import streamlit as st
 import numpy as np
 import joblib
 import tensorflow as tf
+import os
 from sentence_transformers import SentenceTransformer
 
-# --- Page setup ---
-# We set page title and layout for a clean centered UI
-st.set_page_config(page_title="Complaint Neuro Intelligence System", layout="centered")
 
-# --- Custom Styling ---
-# Gradient background + styled blocks/buttons for classy look
+st.set_page_config(
+    page_title="NeuroRoute | AI Complaint Intelligence",
+    layout="centered"
+)
+
+
 st.markdown(
     """
     <style>
     body {
-        background: linear-gradient(135deg, #1f1c2c, #928dab);
-        color: #f0f0f0;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        color: #f5f5f5;
         font-family: 'Segoe UI', sans-serif;
     }
     .block {
-        background-color: rgba(255,255,255,0.05);
-        padding: 20px;
-        border-radius: 15px;
-        margin-top: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        background: rgba(255,255,255,0.06);
+        padding: 22px;
+        border-radius: 16px;
+        margin-top: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.35);
     }
     .stTextArea textarea {
-        background-color: #2c2c34;
-        color: #f0f0f0;
-        border-radius: 8px;
+        background-color: #1e1e2f;
+        color: #ffffff;
+        border-radius: 10px;
+        border: 1px solid #444;
     }
     .stButton button {
-        background: linear-gradient(90deg, #ff6a00, #ee0979);
+        background: linear-gradient(90deg, #ff512f, #dd2476);
         color: white;
         width: 100%;
-        height: 3em;
-        border-radius: 8px;
+        height: 3.2em;
+        border-radius: 10px;
         font-weight: bold;
+        border: none;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- Label Mapping ---
-# Map raw model labels to human-friendly names with emojis
-LABEL_MAP = {
-    "Credit card": "💳 Credit Card Issues",
-    "Credit card or prepaid card": "💳 Credit / Prepaid Card Issues",
-    "Payday loan, title loan, personal loan, or advance loan": "💰 Loan & EMI Issues",
-    "Payday loan, title loan, or personal loan": "💰 Personal Loan Issues",
-    "Student loan": "🎓 Student Loan Issues",
-    "Debt collection": "📩 Debt Collection & Recovery",
-    "Checking or savings account": "🏦 Bank Account & Debit Card Issues",
-    "Money transfer, virtual currency, or money service": "💸 Money Transfer / Wallet Issues"
-}
 
-# --- Load Model + Encoder ---
-# Directly load files from repo root (no folder path)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_FILE = os.path.join(BASE_DIR, "final_neural_model.keras")
+ENCODER_FILE = os.path.join(BASE_DIR, "label_encoder.pkl")
+
+
 @st.cache_resource
 def load_model_and_encoder():
-    model = tf.keras.models.load_model(
-        "final_neural_model.keras",   # direct file name
-        compile=False
-    )
-    encoder = joblib.load("label_encoder.pkl")  # direct file name
+    model = tf.keras.models.load_model(MODEL_FILE, compile=False)
+    encoder = joblib.load(ENCODER_FILE)
     return model, encoder
 
-# --- Load Embedder ---
-# SentenceTransformer converts text into embeddings for model input
+
 @st.cache_resource
 def load_embedder():
     return SentenceTransformer("all-MiniLM-L6-v2")
 
+
 model, label_encoder = load_model_and_encoder()
 embedder = load_embedder()
 
-# --- Session State ---
-# Store prediction + last text to avoid re-running unnecessarily
-if "prediction" not in st.session_state:
-    st.session_state.prediction = None
-if "last_text" not in st.session_state:
-    st.session_state.last_text = ""
 
-# --- Header ---
-# Title and subtitle for app branding
-st.markdown("<h1 style='text-align:center;'>✨ Complaint Neuro Intelligence System ✨</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#ddd;'>Smart complaint routing with classy insights</p>", unsafe_allow_html=True)
+LABEL_MAP = {
+    "Credit card": "💳 Credit Card Issues",
+    "Credit card or prepaid card": "💳 Credit / Prepaid Card",
+    "Debt collection": "📩 Debt Collection",
+    "Checking or savings account": "🏦 Bank Account",
+    "Student loan": "🎓 Student Loan",
+    "Payday loan, title loan, personal loan, or advance loan": "💰 Loan & EMI",
+    "Money transfer, virtual currency, or money service": "💸 Wallet / Transfer"
+}
+
+
+st.markdown("<h1 style='text-align:center;'>🧠 NeuroRoute</h1>", unsafe_allow_html=True)
+st.markdown(
+    "<p style='text-align:center; color:#dcdcdc;'>AI-Powered Complaint Intelligence & Smart Routing</p>",
+    unsafe_allow_html=True
+)
+
+
 st.markdown("<div class='block'>", unsafe_allow_html=True)
 
-# --- Input Area ---
-# User pastes complaint text here for analysis
 user_text = st.text_area(
     "📝 Paste customer complaint text",
     height=160,
-    placeholder="Example: My loan EMI was deducted twice and the bank is not refunding the amount."
+    placeholder="Example: My EMI was deducted twice and no refund has been issued."
 )
 
-if user_text != st.session_state.last_text:
-    st.session_state.prediction = None
-    st.session_state.last_text = user_text
-
-# --- Analyze Button ---
-# Spinner shows while model processes embeddings + prediction
-if st.button("🔍 Analyze Complaint"):
+if st.button("🚀 Analyze Complaint"):
     if user_text.strip():
-        with st.spinner("⚡ Analyzing complaint... please wait"):
+        with st.spinner("⚡ Understanding complaint context..."):
             embedding = embedder.encode([user_text])
-            st.session_state.prediction = model.predict(embedding)[0]
-        st.success("✅ Analysis complete! Results below 👇")
+            probs = model.predict(embedding, verbose=0)[0]
+        st.session_state.probs = probs
+    else:
+        st.warning("⚠️ Please enter a complaint text.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Prediction Results ---
-# Show top 3 categories with confidence + bar chart + business insight
-if st.session_state.prediction is not None:
-    probs = st.session_state.prediction
+
+if "probs" in st.session_state:
+    probs = st.session_state.probs
     idx = np.argsort(probs)[-3:][::-1]
     raw_labels = label_encoder.inverse_transform(idx)
     labels = [LABEL_MAP.get(l, l) for l in raw_labels]
@@ -135,12 +128,12 @@ if st.session_state.prediction is not None:
         {"Category": labels, "Confidence (%)": scores},
         x="Category",
         y="Confidence (%)",
-        height=280
+        height=300
     )
 
     if scores[0] > 60:
-        st.success("🔥 High priority complaint! Immediate attention advised.")
+        st.success("🔥 High-risk complaint detected. Immediate action advised.")
     else:
-        st.info("🛠 Operational review recommended.")
+        st.info("🛠 Medium-risk complaint. Operational review recommended.")
 
     st.markdown("</div>", unsafe_allow_html=True)

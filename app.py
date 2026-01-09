@@ -5,7 +5,7 @@ import os
 import tensorflow as tf
 from sentence_transformers import SentenceTransformer
 
-st.set_page_config(page_title="Complaint Intelligence System", layout="centered")
+st.set_page_config(page_title="Complaint Neuro Intelligence System", layout="centered")
 
 st.markdown(
     """
@@ -117,3 +117,4 @@ if st.session_state.prediction is not None:
     )
 
     st.markdown("</div>", unsafe_allow_html=True)
+
